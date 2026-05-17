@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Lift">
+<title>Lift</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  :root {
+    --red: #e84545;
+    --red-dark: #c23636;
+    --bg: #111111;
+    --surface: #1c1c1e;
+    --card: #242424;
+    --card2: #2c2c2e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #ffffff;
+    --text2: #ababab;
+    --text3: #666666;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif; color: var(--text); overscroll-behavior: none; }
+
+  #app { display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; max-width: 430px; margin: 0 auto; background: var(--bg); overflow: hidden; }
+
+  .statusbar { background: var(--bg); padding: calc(var(--safe-top) + 8px) 20px 6px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .statusbar .time { font-size: 15px; font-weight: 600; color: var(--text); }
+  .statusbar .brand { font-size: 15px; font-weight: 700; color: var(--red); letter-spacing: 2px; }
+  .statusbar .signal { font-size: 11px; color: var(--text2); }
+
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; background: var(--bg); }
+  .page { display: none; flex-direction: column; padding-bottom: 20px; }
+  .page.active { display: flex; }
+
+  .topbar { background: var(--bg); padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 5; }
+  .topbar h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+  .topbar .icon-btn { background: none; border: none; cursor: pointer; color: var(--red); font-size: 22px; padding: 4px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .topbar .back-btn { background: none; border: none; cursor: pointer; color: var(--red); font-size: 15px; font-weight: 500; padding: 4px 0; display: flex; align-items: center; gap: 4px; }
+  .topbar .back-btn i { font-size: 20px; }
+
+  .day-tabs { display: flex; gap: 6px; background: var(--bg); padding: 8px 12px 10px; overflow-x: auto; scrollbar-width: none; border-bottom: 0.5px solid var(--border); }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab { background: var(--card); border: none; cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: 20px; white-space: nowrap; transition: all 0.15s; }
+  .day-tab.active { background: var(--red); color: #fff; }
+
+  .ex-card { background: var(--card); margin: 10px 12px 0; border-radius: 16px; overflow: hidden; border: 0.5px solid var(--border); }
+  .ex-header { padding: 13px 14px 11px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--border); }
+  .ex-header-left { display: flex; align-items: center; gap: 10px; }
+  .ex-num { color: var(--red); font-size: 13px; font-weight: 700; min-width: 20px; }
+  .ex-name { font-size: 16px; font-weight: 600; color: var(--text); }
+  .ex-muscle { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .ex-btns { display: flex; gap: 4px; }
+  .ex-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; padding: 5px; border-radius: 8px; display: flex; align-items: center; transition: color 0.15s; }
+  .ex-btn:active { color: var(--red); }
+
+  .sets-area { padding: 10px 14px 12px; }
+  .sets-head { display: grid; grid-template-columns: 32px 1fr 1fr 38px; gap: 6px; padding-bottom: 6px; }
+  .sets-head span { font-size: 11px; color: var(--text3); text-align: center; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sets-head span:first-child { text-align: left; }
+  .set-row { display: grid; grid-template-columns: 32px 1fr 1fr 38px; gap: 6px; align-items: center; padding: 5px 0; border-top: 0.5px solid var(--border); }
+  .set-label { font-size: 13px; color: var(--text3); font-weight: 500; }
+  .set-inp { background: var(--card2); border: 0.5px solid var(--border2); border-radius: 9px; color: var(--text); font-size: 14px; text-align: center; padding: 7px 4px; width: 100%; -webkit-appearance: none; }
+  .set-inp:focus { outline: none; border-color: var(--red); }
+  .set-done { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border2); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: transparent; margin: 0 auto; transition: all 0.15s; }
+  .set-done.checked { background: var(--red); border-color: var(--red); color: #fff; }
+  .set-done i { font-size: 14px; }
+  .set-actions { display: flex; gap: 6px; padding-top: 8px; }
+  .set-actions button { flex: 1; background: var(--card2); border: 0.5px solid var(--border); border-radius: 10px; color: var(--text2); font-size: 13px; font-weight: 500; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.15s; }
+  .set-actions button:active { background: var(--border2); }
+  .set-actions button i { font-size: 15px; }
+
+  .add-ex-btn { margin: 14px 12px 0; background: var(--red); border: none; border-radius: 14px; color: #fff; font-size: 16px; font-weight: 600; padding: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; }
+  .add-ex-btn:active { background: var(--red-dark); }
+  .add-ex-btn i { font-size: 19px; }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--text3); font-size: 14px; line-height: 1.6; }
+  .empty-state i { font-size: 44px; display: block; margin-bottom: 12px; color: var(--border2); }
+
+  .lib-search-wrap { background: var(--bg); padding: 10px 12px 6px; position: sticky; top: 57px; z-index: 4; border-bottom: 0.5px solid var(--border); }
+  .lib-search { width: 100%; background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; color: var(--text); font-size: 15px; padding: 10px 14px; -webkit-appearance: none; }
+  .lib-search::placeholder { color: var(--text3); }
+  .lib-search:focus { outline: none; border-color: var(--red); }
+
+  .muscle-pills { display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; }
+  .muscle-pills::-webkit-scrollbar { display: none; }
+  .pill { background: var(--card); border: 0.5px solid var(--border); border-radius: 20px; color: var(--text2); font-size: 12px; font-weight: 500; padding: 6px 14px; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .pill.active { background: var(--red); border-color: var(--red); color: #fff; }
+
+  .lib-item { background: var(--card); margin: 6px 12px 0; border-radius: 13px; padding: 13px 14px; display: flex; align-items: center; justify-content: space-between; border: 0.5px solid var(--border); }
+  .lib-item-info h4 { font-size: 15px; font-weight: 600; color: var(--text); }
+  .lib-item-info span { font-size: 12px; color: var(--text3); }
+  .lib-add { background: var(--red); border: none; border-radius: 9px; color: #fff; cursor: pointer; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+  .lib-add:active { background: var(--red-dark); }
+  .lib-add.added { background: var(--card2); color: var(--text3); }
+  .lib-add i { font-size: 17px; }
+
+  .hist-item { background: var(--card); margin: 10px 12px 0; border-radius: 16px; padding: 14px; border: 0.5px solid var(--border); }
+  .hist-item h3 { font-size: 16px; font-weight: 600; }
+  .hist-item .hist-date { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .hist-stats { display: flex; gap: 8px; margin-top: 12px; }
+  .hist-stat { flex: 1; background: var(--card2); border-radius: 10px; padding: 10px 8px; text-align: center; }
+  .hist-stat .val { color: var(--red); font-size: 18px; font-weight: 700; display: block; }
+  .hist-stat .lbl { color: var(--text3); font-size: 11px; margin-top: 2px; }
+
+  .navbar { background: var(--surface); border-top: 0.5px solid var(--border); padding: 8px 0 calc(var(--safe-bot) + 8px); display: flex; justify-content: space-around; flex-shrink: 0; }
+  .nav-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 20px; color: var(--text3); transition: color 0.15s; }
+  .nav-btn.active { color: var(--red); }
+  .nav-btn i { font-size: 22px; }
+  .nav-btn span { font-size: 10px; font-weight: 500; }
+
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 20; align-items: flex-end; justify-content: center; }
+  .overlay.open { display: flex; }
+  .sheet { background: var(--surface); border-radius: 22px 22px 0 0; padding: 20px 16px calc(var(--safe-bot) + 24px); width: 100%; max-width: 430px; border-top: 0.5px solid var(--border2); }
+  .sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 18px; }
+  .sheet h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .sheet label { font-size: 13px; color: var(--text2); display: block; margin: 14px 0 5px; }
+  .sheet input, .sheet select { width: 100%; background: var(--card); border: 0.5px solid var(--border2); border-radius: 12px; color: var(--text); font-size: 15px; padding: 11px 14px; -webkit-appearance: none; }
+  .sheet input:focus, .sheet select:focus { outline: none; border-color: var(--red); }
+  .sheet select option { background: var(--card); }
+  .sheet-btns { display: flex; gap: 10px; margin-top: 20px; }
+  .sheet-btns button { flex: 1; padding: 14px; border-radius: 13px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn-cancel { background: var(--card); color: var(--text2); }
+  .btn-save { background: var(--red); color: #fff; }
+
+  .day-list-item { background: var(--card); border-radius: 12px; padding: 13px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border: 0.5px solid var(--border); }
+  .day-list-item span { font-size: 15px; font-weight: 500; }
+  .day-list-item-btns { display: flex; gap: 10px; }
+  .day-list-item-btns button { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text3); padding: 2px; }
+  .day-list-item-btns button:active { color: var(--red); }
+  .add-day-btn { background: var(--card2); border: 0.5px dashed var(--border2); border-radius: 12px; color: var(--text3); font-size: 15px; font-weight: 500; padding: 14px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .add-day-btn:active { border-color: var(--red); color: var(--red); }
+
+  .toast { position: fixed; top: calc(var(--safe-top) + 60px); left: 50%; transform: translateX(-50%) translateY(-10px); background: var(--red); color: #fff; font-size: 14px; font-weight: 500; padding: 9px 18px; border-radius: 30px; opacity: 0; transition: all 0.25s; z-index: 100; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="statusbar">
+    <span class="time" id="clock">9:41</span>
+    <span class="brand">LIFT</span>
+    <span class="signal">●●●</span>
+  </div>
+
+  <div class="content" id="content">
+
+    <div class="page active" id="page-workout">
+      <div class="topbar">
+        <h1>My program</h1>
+        <button class="icon-btn" onclick="openSheet('sheet-days')" aria-label="Manage days"><i class="ti ti-settings"></i></button>
+      </div>
+      <div class="day-tabs" id="day-tabs"></div>
+      <div id="ex-list"></div>
+      <button class="add-ex-btn" onclick="showPage('page-library')">
+        <i class="ti ti-plus"></i> Add exercise
+      </button>
+      <div style="height:16px;"></div>
+    </div>
+
+    <div class="page" id="page-library">
+      <div class="topbar">
+        <button class="back-btn" onclick="showPage('page-workout')"><i class="ti ti-chevron-left"></i> Back</button>
+        <h1>Library</h1>
+        <div style="width:60px;"></div>
+      </div>
+      <div class="lib-search-wrap">
+        <input class="lib-search" type="search" placeholder="Search exercises..." id="lib-search-inp" oninput="renderLib()">
+      </div>
+      <div class="muscle-pills" id="muscle-pills"></div>
+      <div id="lib-list"></div>
+      <div style="height:20px;"></div>
+    </div>
+
+    <div class="page" id="page-history">
+      <div class="topbar"><h1>History</h1></div>
+      <div id="hist-list"></div>
+    </div>
+
+  </div>
+
+  <nav class="navbar">
+    <button class="nav-btn active" id="nav-workout" onclick="showPage('page-workout')">
+      <i class="ti ti-barbell"></i><span>Workout</span>
+    </button>
+    <button class="nav-btn" id="nav-library" onclick="showPage('page-library')">
+      <i class="ti ti-books"></i><span>Library</span>
+    </button>
+    <button class="nav-btn" id="nav-history" onclick="showPage('page-history')">
+      <i class="ti ti-chart-bar"></i><span>History</span>
+    </button>
+  </nav>
+</div>
+
+<div class="overlay" id="sheet-days" onclick="handleOverlayClick(event,'sheet-days')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Manage days</h2>
+    <div id="day-list-modal"></div>
+    <button class="add-day-btn" onclick="addDay()"><i class="ti ti-plus"></i> Add day</button>
+    <div class="sheet-btns" style="margin-top:16px;">
+      <button class="btn-save" onclick="closeSheet('sheet-days')">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="sheet-edit" onclick="handleOverlayClick(event,'sheet-edit')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="edit-title">Edit exercise</h2>
+    <label>Exercise name</label>
+    <input type="text" id="edit-name" placeholder="e.g. Barbell squat">
+    <label>Muscle group</label>
+    <select id="edit-muscle">
+      <option>Calves</option><option>Quads</option><option>Hamstrings</option><option>Glutes</option>
+      <option>Back</option><option>Lats</option><option>Chest</option><option>Shoulders</option>
+      <option>Biceps</option><option>Triceps</option><option>Core</option><option>Full body</option>
+    </select>
+    <div class="sheet-btns">
+      <button class="btn-cancel" onclick="closeSheet('sheet-edit')">Cancel</button>
+      <button class="btn-save" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="sheet-rename" onclick="handleOverlayClick(event,'sheet-rename')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Rename day</h2>
+    <label>Day name</label>
+    <input type="text" id="rename-inp" placeholder="e.g. Push day">
+    <div class="sheet-btns">
+      <button class="btn-cancel" onclick="closeSheet('sheet-rename')">Cancel</button>
+      <button class="btn-save" onclick="saveRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MUSCLES = ['All','Calves','Quads','Hamstrings','Glutes','Back','Lats','Chest','Shoulders','Biceps','Triceps','Core','Full body'];
+const LIBRARY = [
+  {name:'Heel raises',muscle:'Calves'},{name:'Tibialis raises',muscle:'Calves'},{name:'Calf press',muscle:'Calves'},
+  {name:'Split squat',muscle:'Quads'},{name:'Leg press',muscle:'Quads'},{name:'Hack squat',muscle:'Quads'},{name:'Front squat',muscle:'Quads'},{name:'Leg extension',muscle:'Quads'},
+  {name:'Romanian deadlift',muscle:'Hamstrings'},{name:'Leg curl',muscle:'Hamstrings'},{name:'Nordic curl',muscle:'Hamstrings'},
+  {name:'GHD',muscle:'Glutes'},{name:'Jefferson curls',muscle:'Glutes'},{name:'Hip thrust',muscle:'Glutes'},{name:'Glute bridge',muscle:'Glutes'},{name:'Cable kickback',muscle:'Glutes'},
+  {name:'Ring rows',muscle:'Back'},{name:'Cable row',muscle:'Back'},{name:'Barbell row',muscle:'Back'},{name:'Chest-supported row',muscle:'Back'},{name:'Face pulls',muscle:'Back'},
+  {name:'Kettlebell pullovers',muscle:'Lats'},{name:'Pull-ups',muscle:'Lats'},{name:'Lat pulldown',muscle:'Lats'},{name:'Cable pullover',muscle:'Lats'},{name:'Chin-ups',muscle:'Lats'},
+  {name:'Pushups',muscle:'Chest'},{name:'Bench press',muscle:'Chest'},{name:'Incline dumbbell press',muscle:'Chest'},{name:'Cable fly',muscle:'Chest'},{name:'Dips',muscle:'Chest'},
+  {name:'Dumbbell ER',muscle:'Shoulders'},{name:'Powell raises',muscle:'Shoulders'},{name:'Lateral raises',muscle:'Shoulders'},{name:'Overhead press',muscle:'Shoulders'},{name:'Arnold press',muscle:'Shoulders'},
+  {name:'Barbell curl',muscle:'Biceps'},{name:'Hammer curl',muscle:'Biceps'},{name:'Incline curl',muscle:'Biceps'},{name:'Cable curl',muscle:'Biceps'},
+  {name:'Tricep pushdown',muscle:'Triceps'},{name:'Skull crushers',muscle:'Triceps'},{name:'Overhead extension',muscle:'Triceps'},{name:'Close-grip bench',muscle:'Triceps'},
+  {name:'Ab wheel',muscle:'Core'},{name:'Leg raises',muscle:'Core'},{name:'Plank',muscle:'Core'},{name:'Cable crunch',muscle:'Core'},{name:'Pallof press',muscle:'Core'},
+  {name:'Deadlift',muscle:'Full body'},{name:'Clean and press',muscle:'Full body'},{name:'Farmer carry',muscle:'Full body'},
+];
+
+const KEY = 'lift_v2';
+let state = load();
+let activeDayIdx = 0;
+let libFilter = 'All';
+let editingDay = null;
+let editingExIdx = null;
+let renamingDayIdx = null;
+
+function load() {
+  try {
+    const s = localStorage.getItem(KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return {
+    days: ['Day 1','Day 2','Day 3','Day 4'],
+    program: {
+      'Day 1': [
+        {name:'Heel raises',muscle:'Calves',sets:[{w:'',r:'',done:false},{w:'',r:'',done:false}]},
+        {name:'Split squat',muscle:'Quads',sets:[{w:'',r:'',done:false},{w:'',r:'',done:false}]},
+        {name:'Pull-ups',muscle:'Lats',sets:[{w:'',r:'',done:false},{w:'',r:'',done:false}]},
+      ],
+      'Day 2': [
+        {name:'Pushups',muscle:'Chest',sets:[{w:'',r:'',done:false},{w:'',r:'',done:false}]},
+        {name:'Ring rows',muscle:'Back',sets:[{w:'',r:'',done:false},{w:'',r:'',done:false}]},
+        {name:'Ab wheel',muscle:'Core',sets:[{w:'',r:'',done:false}]},
+      ],
+      'Day 3': [], 'Day 4': []
+    },
+    history: []
+  };
+}
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  ['workout','library','history'].forEach(n => document.getElementById('nav-'+n).classList.remove('active'));
+  const map = {'page-workout':'workout','page-library':'library','page-history':'history'};
+  if (map[id]) document.getElementById('nav-'+map[id]).classList.add('active');
+  if (id === 'page-library') renderLib();
+  if (id === 'page-history') renderHistory();
+  document.getElementById('content').scrollTop = 0;
+}
+
+function openSheet(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'sheet-days') renderDayModal();
+}
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+function handleOverlayClick(e, id) { if (e.target === document.getElementById(id)) closeSheet(id); }
+
+function curDay() { return state.days[activeDayIdx]; }
+function curExercises() { return state.program[curDay()] || []; }
+
+function renderDayTabs() {
+  document.getElementById('day-tabs').innerHTML = state.days.map((d,i) =>
+    `<button class="day-tab ${i===activeDayIdx?'active':''}" onclick="setDay(${i})">${d}</button>`
+  ).join('');
+}
+
+function setDay(i) {
+  activeDayIdx = i;
+  renderDayTabs();
+  renderWorkout();
+}
+
+function renderWorkout() {
+  const exs = curExercises();
+  const day = curDay();
+  const el = document.getElementById('ex-list');
+  if (!exs.length) {
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-barbell"></i>No exercises yet.<br>Tap "Add exercise" to get started.</div>`;
+    return;
+  }
+  el.innerHTML = exs.map((ex, ei) => {
+    const sets = ex.sets.map((s, si) => `
+      <div class="set-row">
+        <span class="set-label">${si+1}</span>
+        <input class="set-inp" type="number" inputmode="decimal" placeholder="lbs" value="${s.w}"
+          onchange="setField('${day}',${ei},${si},'w',this.value)">
+        <input class="set-inp" type="number" inputmode="numeric" placeholder="reps" value="${s.r}"
+          onchange="setField('${day}',${ei},${si},'r',this.value)">
+        <button class="set-done ${s.done?'checked':''}" onclick="toggleDone('${day}',${ei},${si})" aria-label="Done">
+          <i class="ti ti-check"></i>
+        </button>
+      </div>
+    `).join('');
+    return `
+    <div class="ex-card">
+      <div class="ex-header">
+        <div class="ex-header-left">
+          <span class="ex-num">${ei+1}</span>
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-muscle">${ex.muscle}</div>
+          </div>
+        </div>
+        <div class="ex-btns">
+          <button class="ex-btn" onclick="openEdit('${day}',${ei})" aria-label="Edit"><i class="ti ti-edit"></i></button>
+          <button class="ex-btn" onclick="deleteEx('${day}',${ei})" aria-label="Delete"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="sets-area">
+        <div class="sets-head"><span>Set</span><span>Weight</span><span>Reps</span><span></span></div>
+        ${sets}
+        <div class="set-actions">
+          <button onclick="addSet('${day}',${ei})"><i class="ti ti-plus"></i> Add set</button>
+          <button onclick="removeSet('${day}',${ei})" ${ex.sets.length<=1?'style="opacity:0.35;"':''}><i class="ti ti-minus"></i> Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setField(day, ei, si, field, val) {
+  state.program[day][ei].sets[si][field] = val;
+  save();
+}
+
+function toggleDone(day, ei, si) {
+  state.program[day][ei].sets[si].done = !state.program[day][ei].sets[si].done;
+  save();
+  renderWorkout();
+}
+
+function addSet(day, ei) {
+  state.program[day][ei].sets.push({w:'',r:'',done:false});
+  save(); renderWorkout();
+}
+
+function removeSet(day, ei) {
+  if (state.program[day][ei].sets.length <= 1) return;
+  state.program[day][ei].sets.pop();
+  save(); renderWorkout();
+}
+
+function deleteEx(day, ei) {
+  if (!confirm('Remove ' + state.program[day][ei].name + '?')) return;
+  state.program[day].splice(ei, 1);
+  save(); renderWorkout();
+}
+
+function openEdit(day, ei) {
+  editingDay = day; editingExIdx = ei;
+  const ex = state.program[day][ei];
+  document.getElementById('edit-name').value = ex.name;
+  document.getElementById('edit-muscle').value = ex.muscle;
+  openSheet('sheet-edit');
+}
+
+function saveEdit() {
+  const name = document.getElementById('edit-name').value.trim();
+  const muscle = document.getElementById('edit-muscle').value;
+  if (!name) return;
+  state.program[editingDay][editingExIdx].name = name;
+  state.program[editingDay][editingExIdx].muscle = muscle;
+  save(); closeSheet('sheet-edit'); renderWorkout();
+}
+
+function renderDayModal() {
+  document.getElementById('day-list-modal').innerHTML = state.days.map((d,i) => `
+    <div class="day-list-item">
+      <span>${d}</span>
+      <div class="day-list-item-btns">
+        <button onclick="openRename(${i})" aria-label="Rename"><i class="ti ti-edit"></i></button>
+        <button onclick="deleteDay(${i})" ${state.days.length<=1?'style="opacity:0.3;pointer-events:none;"':''} aria-label="Delete"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addDay() {
+  const name = 'Day ' + (state.days.length + 1);
+  state.days.push(name);
+  state.program[name] = [];
+  save(); renderDayModal(); renderDayTabs();
+}
+
+function deleteDay(i) {
+  if (state.days.length <= 1) return;
+  if (!confirm('Delete ' + state.days[i] + '?')) return;
+  const name = state.days[i];
+  state.days.splice(i, 1);
+  delete state.program[name];
+  if (activeDayIdx >= state.days.length) activeDayIdx = state.days.length - 1;
+  save(); renderDayModal(); renderDayTabs(); renderWorkout();
+}
+
+function openRename(i) {
+  renamingDayIdx = i;
+  document.getElementById('rename-inp').value = state.days[i];
+  closeSheet('sheet-days');
+  setTimeout(() => openSheet('sheet-rename'), 50);
+}
+
+function saveRename() {
+  const name = document.getElementById('rename-inp').value.trim();
+  if (!name) return;
+  const old = state.days[renamingDayIdx];
+  const exs = state.program[old] || [];
+  state.days[renamingDayIdx] = name;
+  state.program[name] = exs;
+  delete state.program[old];
+  save(); closeSheet('sheet-rename');
+  setTimeout(() => openSheet('sheet-days'), 50);
+  renderDayTabs(); renderWorkout();
+}
+
+function renderLib() {
+  const q = document.getElementById('lib-search-inp').value.toLowerCase();
+  document.getElementById('muscle-pills').innerHTML = MUSCLES.map(m =>
+    `<button class="pill ${m===libFilter?'active':''}" onclick="setLibFilter('${m}')">${m}</button>`
+  ).join('');
+  const inDay = (state.program[curDay()]||[]).map(e => e.name);
+  const filtered = LIBRARY.filter(e =>
+    (libFilter==='All' || e.muscle===libFilter) &&
+    (e.name.toLowerCase().includes(q) || e.muscle.toLowerCase().includes(q))
+  );
+  if (!filtered.length) {
+    document.getElementById('lib-list').innerHTML = '<div class="empty-state"><i class="ti ti-search"></i>No exercises found.</div>';
+    return;
+  }
+  document.getElementById('lib-list').innerHTML = filtered.map(e => {
+    const added = inDay.includes(e.name);
+    return `
+    <div class="lib-item">
+      <div class="lib-item-info">
+        <h4>${e.name}</h4>
+        <span>${e.muscle}</span>
+      </div>
+      <button class="lib-add ${added?'added':''}" ${added?'disabled':''} onclick="addFromLib('${e.name}','${e.muscle}')" aria-label="Add ${e.name}">
+        <i class="ti ti-${added?'check':'plus'}"></i>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function setLibFilter(m) { libFilter = m; renderLib(); }
+
+function addFromLib(name, muscle) {
+  const day = curDay();
+  if (!state.program[day]) state.program[day] = [];
+  state.program[day].push({name, muscle, sets:[{w:'',r:'',done:false}]});
+  save(); renderLib();
+  toast(name + ' added to ' + day);
+}
+
+function renderHistory() {
+  const items = state.days.map(d => {
+    const exs = state.program[d] || [];
+    const totalSets = exs.reduce((a,e) => a + e.sets.length, 0);
+    const doneSets = exs.reduce((a,e) => a + e.sets.filter(s=>s.done).length, 0);
+    return {day:d, exs:exs.length, totalSets, doneSets};
+  }).filter(i => i.exs > 0);
+  if (!items.length) {
+    document.getElementById('hist-list').innerHTML = '<div class="empty-state"><i class="ti ti-chart-bar"></i>Add exercises to see your program summary here.</div>';
+    return;
+  }
+  document.getElementById('hist-list').innerHTML = items.map(i => `
+    <div class="hist-item">
+      <h3>${i.day}</h3>
+      <div class="hist-date">${i.exs} exercise${i.exs!==1?'s':''}</div>
+      <div class="hist-stats">
+        <div class="hist-stat"><span class="val">${i.exs}</span><span class="lbl">Exercises</span></div>
+        <div class="hist-stat"><span class="val">${i.totalSets}</span><span class="lbl">Total sets</span></div>
+        <div class="hist-stat"><span class="val">${i.doneSets}</span><span class="lbl">Completed</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours() % 12 || 12;
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+}
+
+updateClock();
+setInterval(updateClock, 10000);
+renderDayTabs();
+renderWorkout();
+</script>
+</body>
+</html>
